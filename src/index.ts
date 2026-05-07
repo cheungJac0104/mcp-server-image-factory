@@ -375,6 +375,189 @@ FILENAME: [suggested filename]`;
 );
 
 server.tool(
+  'describe_image',
+  'Describe an image with optional deep study step. Use mode="quick" to save ~50% tokens.',
+  {
+    imagePath: z.string(),
+    mode: z.enum(['quick', 'study']).optional().describe('quick=single step (~500 tokens), study=two-step deep analysis (~1500 tokens)'),
+    style: z.enum(['documentary', 'artistic', 'technical', 'commercial']).optional().describe('Description style'),
+    captionLength: z.enum(['short', 'medium', 'detailed']).optional().describe('Caption length preference'),
+    includeMetadata: z.enum(['full', 'basic', 'none']).optional().describe('Metadata detail level'),
+  },
+  async (params) => {
+    try {
+      const metadata = await ImageProcessor.extractMetadata(params.imagePath);
+      const mode = params.mode || 'quick';
+      const style = params.style || 'documentary';
+      const captionLength = params.captionLength || outputConfig.captionLength;
+      const includeMetadata = params.includeMetadata || outputConfig.includeMetadata;
+
+      const skillPath = path.join(__dirname, '..', 'skills', 'SKILL.md');
+      let skillContent = '';
+      if (fs.existsSync(skillPath)) {
+        skillContent = fs.readFileSync(skillPath, 'utf-8');
+      }
+
+      const stylePrompts: Record<string, string> = {
+        documentary: 'objective, factual, and detailed',
+        artistic: 'evocative, poetic, and mood-focused',
+        technical: 'precise, analytical, and specification-focused',
+        commercial: 'engaging, marketing-oriented, and appealing',
+      };
+
+      const captionLengthGuide: Record<string, string> = {
+        short: '1 concise sentence',
+        medium: '2-3 sentences',
+        detailed: 'a full paragraph with rich detail',
+      };
+
+      let studyResult = '';
+      let describeResult: string;
+
+      if (mode === 'study') {
+        const studyPrompt = `You are an expert image analyst. Study this image carefully and analyze every detail.
+
+Follow this structured analysis framework:
+
+1. SUBJECTS: What are the main subjects? People, objects, animals, landscapes?
+2. COMPOSITION: Rule of thirds, leading lines, framing, depth of field, perspective
+3. LIGHTING: Direction, quality (harsh/soft), time of day, shadows, highlights
+4. COLORS: Dominant palette, color harmony, saturation, contrast
+5. TEXTURE & DETAIL: Surface qualities, patterns, fine details visible
+6. MOOD & ATMOSPHERE: Emotional tone, weather, ambiance
+7. TECHNICAL: Image quality, focus, noise, format characteristics
+8. CONTEXT: Setting, location clues, cultural or historical elements
+
+Format your study notes as structured bullet points. Be thorough and specific.
+Include technical details: ${metadata.width}x${metadata.height}, ${metadata.format}, ${metadata.aspectRatio} ratio.`;
+
+        studyResult = await modelSelector.analyzeImage(params.imagePath, studyPrompt);
+
+        const describePrompt = `You are a professional image describer. Based on your detailed study notes below, write a polished ${stylePrompts[style]} image description.
+
+SKILL GUIDELINES (from SKILL.md):
+- Start with main subject/category
+- Include key distinguishing features
+- Follow naming conventions: ${outputConfig.namingStyle}
+- Keep filenames under 60 characters
+- Use lowercase only for filenames
+- Replace spaces/special chars with separator
+- Preserve original extension
+
+STUDY NOTES:
+${studyResult}
+
+IMAGE METADATA:
+- Dimensions: ${metadata.width}x${metadata.height}
+- Aspect Ratio: ${metadata.aspectRatio}
+- Format: ${metadata.format}
+- File Size: ${Math.round(metadata.fileSize / 1024)} KB
+
+Write a description in this style: ${stylePrompts[style]}
+
+Include:
+- A comprehensive paragraph describing the scene
+- Key visual elements and their relationships
+- The overall mood and atmosphere
+- Any notable technical or artistic qualities
+
+Format your response as:
+DESCRIPTION: [your polished description paragraph]
+CAPTION: [${captionLengthGuide[captionLength]} caption]
+KEYWORDS: [5-8 comma-separated keywords]
+FILENAME: [suggested ${outputConfig.namingStyle} filename, under 60 chars, no extension]`;
+
+        describeResult = await modelSelector.analyzeImage(params.imagePath, describePrompt);
+      } else {
+        const quickPrompt = `You are a professional image describer. Analyze this image and write a ${stylePrompts[style]} description.
+
+SKILL GUIDELINES (from SKILL.md):
+- Start with main subject/category
+- Include key distinguishing features
+- Follow naming conventions: ${outputConfig.namingStyle}
+- Keep filenames under 60 characters
+- Use lowercase only for filenames
+- Replace spaces/special chars with separator
+- Preserve original extension
+
+IMAGE METADATA:
+- Dimensions: ${metadata.width}x${metadata.height}
+- Aspect Ratio: ${metadata.aspectRatio}
+- Format: ${metadata.format}
+- File Size: ${Math.round(metadata.fileSize / 1024)} KB
+
+Analyze: subjects, composition, lighting, colors, mood, and context.
+Write a description in this style: ${stylePrompts[style]}
+
+Format your response as:
+DESCRIPTION: [your polished description paragraph]
+CAPTION: [${captionLengthGuide[captionLength]} caption]
+KEYWORDS: [5-8 comma-separated keywords]
+FILENAME: [suggested ${outputConfig.namingStyle} filename, under 60 chars, no extension]`;
+
+        describeResult = await modelSelector.analyzeImage(params.imagePath, quickPrompt);
+      }
+
+      const descriptionMatch = describeResult.match(/DESCRIPTION:\s*(.+?)(?=CAPTION:|$)/s);
+      const captionMatch = describeResult.match(/CAPTION:\s*(.+?)(?=KEYWORDS:|$)/s);
+      const keywordsMatch = describeResult.match(/KEYWORDS:\s*(.+?)(?=FILENAME:|$)/s);
+      const filenameMatch = describeResult.match(/FILENAME:\s*(.+)/);
+
+      const description = descriptionMatch?.[1]?.trim() || describeResult;
+      const caption = captionMatch?.[1]?.trim() || '';
+      const keywords = keywordsMatch?.[1]?.trim() || '';
+      const suggestedName = filenameMatch?.[1]?.trim() || ImageProcessor.generateFileName(
+        description,
+        outputConfig.namingStyle,
+        path.basename(params.imagePath)
+      );
+
+      const ext = path.extname(params.imagePath);
+      const fullSuggestedName = suggestedName.replace(/\.[^/.]+$/, '') + ext;
+
+      const result: Record<string, any> = {
+        original: path.basename(params.imagePath),
+        suggested: fullSuggestedName,
+        mode,
+        style,
+        description,
+        caption,
+        keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+      };
+
+      if (includeMetadata !== 'none') {
+        result.metadata = includeMetadata === 'basic'
+          ? { width: metadata.width, height: metadata.height, format: metadata.format, fileSize: metadata.fileSize }
+          : metadata;
+      }
+
+      if (mode === 'study') {
+        result.studyNotes = studyResult;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error describing image: ${(error as Error).message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+server.tool(
   'generate_report',
   'Generate image report in specified format. Saves to output directory if saveToFile is enabled.',
   {
