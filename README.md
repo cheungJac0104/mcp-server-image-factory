@@ -72,6 +72,43 @@ API keys are stored locally in `mcp-server/config.json` - not in opencode.json o
 }
 ```
 
+### Token Manager CLI
+
+A convenient CLI script to manage API tokens without editing config files manually.
+
+```bash
+# List all providers and token status
+npm run token:list
+# or
+node scripts/manage-token.js list
+
+# Show current active configuration
+npm run token:show
+# or
+node scripts/manage-token.js show
+
+# Save API token for a provider (also sets as active)
+node scripts/manage-token.js set alibaba sk-your-key-here
+node scripts/manage-token.js set nvidia nvapi-your-key-here
+node scripts/manage-token.js set openai sk-your-openai-key
+
+# Switch active provider
+node scripts/manage-token.js active alibaba
+
+# Remove API token for a provider
+node scripts/manage-token.js remove alibaba
+```
+
+**Available Providers:**
+| Provider | Description |
+|----------|-------------|
+| `alibaba` | Alibaba DashScope (Qwen-VL models) |
+| `nvidia` | NVIDIA NIM (Nemotron models) |
+| `openai` | OpenAI (GPT-4o, etc.) |
+| `anthropic` | Anthropic (Claude models) |
+| `google` | Google (Gemini models) |
+| `local` | Local Ollama instance |
+
 ### Output Settings (via opencode.json)
 
 Report format, naming style, and other output options are still configured in `opencode.json`:
@@ -242,7 +279,58 @@ The server exposes the following tools:
 }
 ```
 
-## Integration with OpenCode
+### Image Modifier CLI
+
+A powerful CLI tool for image manipulation: compress, resize, rotate, convert, and more.
+
+```bash
+# Show help
+npm run img
+
+# Compress images (reduce file size)
+npm run img:compress <input> -q 70 -o ./output
+npm run img:compress ./photos -q 60 -r -o ./compressed
+
+# Resize images
+npm run img:resize photo.jpg -w 800 -h 600
+npm run img:resize photo.jpg -p 50              # Scale to 50%
+npm run img:resize ./photos -w 1920 -h 1080 -r  # Batch resize
+
+# Rotate images
+npm run img:rotate photo.jpg -d 90
+npm run img:rotate photo.jpg -d 180
+
+# Convert format
+npm run img:convert photo.png -f webp
+npm run img:convert ./photos -f jpg -q 85 -r
+
+# Batch process (combine multiple operations)
+npm run img:batch ./photos --resize 1920x1080 --compress 80 -o ./output
+npm run img:batch ./photos --rotate 90 --grayscale -o ./output
+npm run img:batch ./photos --resize 800x600 --blur 2 --compress 70 -o ./output
+```
+
+**Available Commands:**
+
+| Command | Description | Key Options |
+|---------|-------------|-------------|
+| `compress` | Compress image(s) | `-q` quality, `-p` png level, `-r` recursive |
+| `resize` | Resize by dimensions or % | `-w` width, `-h` height, `-p` percent, `-f` fit mode |
+| `rotate` | Rotate by degrees | `-d` degrees (90/180/270) |
+| `convert` | Change image format | `-f` format (jpg/png/webp/tiff/avif) |
+| `quality` | Adjust quality only | `-q` quality 1-100 |
+| `grayscale` | Convert to B&W | `-o` output dir |
+| `blur` | Apply blur effect | `-s` sigma (0.3-1000) |
+| `flip` | Flip/flop image | `-d` direction (horizontal/vertical) |
+| `crop` | Crop to region | `-x` left, `-y` top, `-w` width, `-h` height |
+| `batch` | Multiple operations | `--resize`, `--compress`, `--rotate`, `--grayscale`, `--blur`, `--flip` |
+
+**Common Options:**
+- `-o, --output <dir>` - Output directory
+- `-r, --recursive` - Process subdirectories
+- `-s, --suffix <str>` - Output filename suffix
+
+### Integration with OpenCode
 
 Add to your `.opencode/config.json`:
 

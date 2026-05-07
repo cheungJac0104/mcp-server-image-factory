@@ -5,3 +5,5 @@ dist/
 config.json
 !config.example.json
 output/
+test_images/
+test-server.ts

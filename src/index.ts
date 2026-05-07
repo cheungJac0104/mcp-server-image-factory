@@ -5,10 +5,14 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { ModelSelector } from './model-selector.js';
 import { ImageProcessor } from './image-processor.js';
 import { ReportGenerator } from './report-generator.js';
 import { SkillConfig, ModelConfig, ImageAnalysis, OutputConfig } from './types.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const server = new McpServer({
   name: 'image-report-mcp-server',

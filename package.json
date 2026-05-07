@@ -10,7 +10,16 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "token": "node scripts/manage-token.js",
+    "token:list": "node scripts/manage-token.js list",
+    "token:show": "node scripts/manage-token.js show",
+    "img": "node scripts/image-modifier.js",
+    "img:compress": "node scripts/image-modifier.js compress",
+    "img:resize": "node scripts/image-modifier.js resize",
+    "img:rotate": "node scripts/image-modifier.js rotate",
+    "img:convert": "node scripts/image-modifier.js convert",
+    "img:batch": "node scripts/image-modifier.js batch"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
