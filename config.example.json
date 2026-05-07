@@ -1,0 +1,38 @@
+{
+  "models": {
+    "alibaba": {
+      "apiKey": "sk-your-dashscope-api-key-here",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "defaultModel": "qwen-vl-max-latest"
+    },
+    "nvidia": {
+      "apiKey": "nvapi-your-nvidia-api-key-hereX",
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "defaultModel": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+    },
+    "openai": {
+      "apiKey": "sk-your-openai-api-key-here",
+      "baseUrl": "https://api.openai.com/v1",
+      "defaultModel": "gpt-4o"
+    },
+    "anthropic": {
+      "apiKey": "sk-ant-your-anthropic-api-key-here",
+      "baseUrl": "https://api.anthropic.com/v1",
+      "defaultModel": "claude-sonnet-4-20250514"
+    },
+    "google": {
+      "apiKey": "your-google-api-key-here",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "defaultModel": "gemini-2.5-flash"
+    },
+    "local": {
+      "apiKey": "",
+      "baseUrl": "http://localhost:11434/v1",
+      "defaultModel": "qwen2.5-vl"
+    }
+  },
+  "activeProvider": "nvidia",
+  "activeModel": "qwen-vl-max-latest",
+  "maxTokens": 2048,
+  "temperature": 0.7
+}
