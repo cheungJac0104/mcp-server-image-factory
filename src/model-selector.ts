@@ -137,6 +137,9 @@ export class ModelSelector {
     const mimeType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
 
     const apiKey = config.apiKey || this.getApiKey('openai');
+    if (!apiKey || apiKey.includes('your-')) {
+      throw new Error('OpenAI API key is not set. Use "manage_api_keys" tool or edit config.json to set your key.');
+    }
     const baseUrl = config.baseUrl || this.getBaseUrl('openai');
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -166,7 +169,15 @@ export class ModelSelector {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+    }
+
     const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error(`OpenAI API returned unexpected response: ${JSON.stringify(data).substring(0, 200)}`);
+    }
     return data.choices[0].message.content;
   }
 
@@ -181,6 +192,9 @@ export class ModelSelector {
     const mimeType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
 
     const apiKey = config.apiKey || this.getApiKey('anthropic');
+    if (!apiKey || apiKey.includes('your-') || !apiKey.startsWith('sk-ant-')) {
+      throw new Error('Anthropic API key is not set. Use "manage_api_keys" tool or edit config.json to set your key.');
+    }
     const baseUrl = config.baseUrl || this.getBaseUrl('anthropic');
 
     const response = await fetch(`${baseUrl}/messages`, {
@@ -213,7 +227,15 @@ export class ModelSelector {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Anthropic API error (${response.status}): ${errorText}`);
+    }
+
     const data = await response.json();
+    if (!data.content?.[0]?.text) {
+      throw new Error(`Anthropic API returned unexpected response: ${JSON.stringify(data).substring(0, 200)}`);
+    }
     return data.content[0].text;
   }
 
@@ -227,6 +249,9 @@ export class ModelSelector {
     const base64Image = imageBuffer.toString('base64');
 
     const apiKey = config.apiKey || this.getApiKey('google');
+    if (!apiKey || apiKey.includes('your-')) {
+      throw new Error('Google API key is not set. Use "manage_api_keys" tool or edit config.json to set your key.');
+    }
     const baseUrl = config.baseUrl || this.getBaseUrl('google');
 
     const response = await fetch(
@@ -256,7 +281,15 @@ export class ModelSelector {
       }
     );
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Google API error (${response.status}): ${errorText}`);
+    }
+
     const data = await response.json();
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error(`Google API returned unexpected response: ${JSON.stringify(data).substring(0, 200)}`);
+    }
     return data.candidates[0].content.parts[0].text;
   }
 
@@ -271,6 +304,9 @@ export class ModelSelector {
     const mimeType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
 
     const apiKey = config.apiKey || this.getApiKey('nvidia');
+    if (!apiKey || apiKey.includes('your-')) {
+      throw new Error('NVIDIA API key is not set. Use "manage_api_keys" tool or edit config.json to set your key.');
+    }
     const baseUrl = config.baseUrl || this.getBaseUrl('nvidia');
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -300,7 +336,15 @@ export class ModelSelector {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`NVIDIA API error (${response.status}): ${errorText}`);
+    }
+
     const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error(`NVIDIA API returned unexpected response: ${JSON.stringify(data).substring(0, 200)}`);
+    }
     return data.choices[0].message.content;
   }
 
@@ -315,6 +359,9 @@ export class ModelSelector {
     const mimeType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
 
     const apiKey = config.apiKey || this.getApiKey('alibaba');
+    if (!apiKey || apiKey.includes('your-')) {
+      throw new Error('Alibaba API key is not set. Use "manage_api_keys" tool or edit config.json to set your key.');
+    }
     const baseUrl = config.baseUrl || this.getBaseUrl('alibaba');
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -344,7 +391,15 @@ export class ModelSelector {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Alibaba API error (${response.status}): ${errorText}`);
+    }
+
     const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error(`Alibaba API returned unexpected response: ${JSON.stringify(data).substring(0, 200)}`);
+    }
     return data.choices[0].message.content;
   }
 
@@ -389,7 +444,15 @@ export class ModelSelector {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Local API error (${response.status}): ${errorText}`);
+    }
+
     const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error(`Local API returned unexpected response: ${JSON.stringify(data).substring(0, 200)}`);
+    }
     return data.choices[0].message.content;
   }
 }
